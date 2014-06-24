@@ -198,9 +198,9 @@ a:hover {
 
 section {
 
-  margin: 7em auto 2em;
-  max-width: 50em;
+  margin: 5% auto 2.5%;
+  max-width: 50%;
   position: relative;
-  padding: .1em
+  padding: 5%;
 
 }
