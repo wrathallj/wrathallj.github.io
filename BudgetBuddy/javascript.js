@@ -5,10 +5,10 @@
 var curUser = JSON.parse(localStorage.getItem('storedUser')); // the current user data
 var selectedExpense = '';
 var isInAdjustmentMode = false;
-
+var isInDeleteMode = false;
 
 /******************************************************************
- ************************loadData***************************
+ ************************loadData**********************************
  ******************************************************************/
 function loadData() {
 
@@ -36,6 +36,9 @@ function loadData() {
 
 }
 
+/******************************************************************
+ ************************transitionClick***************************
+ ******************************************************************/
 function transitionClick(destPage, button) {
 
     // array of the possible pages
@@ -77,6 +80,7 @@ function ChangeOperation(button) {
         button.innerHTML = '-';
     }
 }
+
 /******************************************************************
  ***********************SpendItClick***************************
  ******************************************************************/
@@ -239,6 +243,79 @@ function AddCategoryClick(button) {
 }
 
 /******************************************************************
+ **********************Add Category Click**************************
+ ******************************************************************/
+function DeleteExpense(button) {
+
+
+    if (isInDeleteMode) {
+        isInDeleteMode = false;
+
+        for (var key in curUser.expenses) {
+            document.querySelector('#' + key).style.color = 'white';
+
+            // put the original function back on
+            document.querySelector('#' + key).onclick = function() {
+                transitionClick('AmountPage', this)
+            };
+        }
+
+        //remove the finish button
+        document.querySelector('#' + "FinishDelete").remove();
+
+    } else {
+
+
+        // if the button isn't already there we must create it
+        var deleteButton = document.createElement("div");
+        deleteButton.id = "FinishDelete";
+        deleteButton.onclick = function() {
+            DeleteExpense(this)
+        }
+        deleteButton.className = "button";
+        //add the finish button
+        deleteButton.innerHTML = "Finish Deleting Expenses";
+        document.getElementById("MainPage").appendChild(deleteButton);
+
+
+
+        for (var key in curUser.expenses) {
+            document.querySelector('#' + key).style.color = 'red';
+            document.querySelector('#' + key).onclick = function() {
+                RemoveExpense(this)
+            };
+        }
+
+        isInDeleteMode = true;
+    }
+}
+
+function RemoveExpense(button) {
+
+    // remove all the html elements
+    for (var key in curUser.expenses) {
+        document.getElementById(key).remove();
+
+    }
+
+    document.getElementById("FinishDelete").remove();
+
+    //remove from the array
+    delete curUser.expenses[button.id];
+    delete curUser.monthlyAllotment[button.id];
+
+    // bring then all back again
+    addCustomExpenses();
+
+    //stay in delete mode
+    isInDeleteMode = false;
+    DeleteExpense(button);
+
+    // put user data in storage
+    localStorage.setItem('storedUser', JSON.stringify(curUser));
+}
+
+/******************************************************************
  **********************Adjust Budget Button************************
  ******************************************************************/
 function AdjustBudget(button) {
@@ -254,6 +331,8 @@ function AdjustBudget(button) {
         }
 
         document.querySelector("#SpendIt").innerHTML = 'Spend It!';
+
+        //remove the finish button
         document.querySelector('#' + "FinishAdjustments").remove();
 
     } else {
@@ -265,13 +344,15 @@ function AdjustBudget(button) {
             };
 
             adjustButton.className = "button";
+
+            //add the finish button
             adjustButton.innerHTML = "Finish Budget Adjustments";
             document.getElementById("MainPage").appendChild(adjustButton);
         }
 
         document.querySelector("#SpendIt").innerHTML = 'Set Budget';
         for (var key in curUser.expenses) {
-            document.querySelector('#' + key).style.color = 'red';
+            document.querySelector('#' + key).style.color = 'green';
             document.querySelector('#' + key).innerHTML = key + ": $" + curUser.monthlyAllotment[key];
         }
 
@@ -292,6 +373,8 @@ function addCustomExpenses() {
     var customExpenses;
 
     for (var key in curUser.expenses) {
+
+        //if the element isn't already on the page put it one 
         if (document.getElementById(key) == null) {
             customExpenses = document.createElement("div");
             customExpenses.id = key;
