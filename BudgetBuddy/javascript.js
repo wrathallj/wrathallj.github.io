@@ -1,8 +1,10 @@
 /******************************************************************
  ************************Global Variables***************************
  ******************************************************************/
+//localStorage.clear();
 var curUser = JSON.parse(localStorage.getItem('storedUser')); // the current user data
 var selectedExpense = '';
+var isInAdjustmentMode = false;
 
 
 /******************************************************************
@@ -13,37 +15,73 @@ function loadData() {
     // if it is a new user
     if (curUser == null) {
         curUser = new User();
-        curUser.name = prompt("Please enter your name", "Harry Potter");
+        curUser.name = prompt(" Welcome to Budget Buddy! Please enter your name", "Harry Potter");
+        transitionClick("SettingsPage", "Open");
+        window.alert("Be sure to add the different budget categories here.");
     }
 
-    // set the html
-    Food.innerHTML = "Food: " + curUser.expenses.Food;
-    Transportation.innerHTML = "Transportation: " + curUser.expenses.Transportation;
-    Fun.innerHTML = "Fun: " + curUser.expenses.Fun;
-    Medical.innerHTML = "Medical: " + curUser.expenses.Medical;
-    Clothing.innerHTML = "Clothing: " + curUser.expenses.Clothing;
+    //add the different Expenses
+    addCustomExpenses();
+
+    // Check if it is a new month
+    var tempDate = new Date();
+    if (curUser.lastLoginMonth != tempDate.getMonth()) {
+
+        // woot replenish the bank!
+        resetBudget();
+    }
 
     // put user data in storage
     localStorage.setItem('storedUser', JSON.stringify(curUser));
-}
-
-function AmountClick(button) {
-
-    //trasition to the AmountPage
-    document.querySelector("#MainPage").style.left = "-1000%";
-    document.querySelector("#MainPage").style.position = "absolute";
-    document.querySelector("#AmountPage").style.left = "0%";
-    document.querySelector("#AmountPage").style.position = "relative";
-
-    // choose the expense in which to apply the expense
-    selectedExpense = button.id;
 
 }
 
+function transitionClick(destPage, button) {
+
+    // array of the possible pages
+    var pageArray = ["MainPage", "StatsPage", "SettingsPage", "AmountPage"];
+    var isBudgetSetup = false;
+
+    // go through all the pages
+    for (var i = pageArray.length - 1; i >= 0; i--) {
+
+        // the destination page will move in
+        if (pageArray[i] == destPage) {
+            document.querySelector('#' + destPage).style.left = "0%";
+            document.querySelector('#' + destPage).style.position = "relative";
+
+            // if it is the  amount page we will need to know the expense typ
+            if ("AmountPage" == destPage) {
+                selectedExpense = button.id;
+                AmountSpent.innerHTML = '$0';
+            }
+
+            // all the rest of the pages will move out    
+        } else {
+            document.querySelector('#' + pageArray[i]).style.left = "-500%";
+            document.querySelector('#' + pageArray[i]).style.position = "absolute";
+        }
+
+    };
+
+    window.scrollTo(0, 0);
+
+}
+/******************************************************************
+ ***********************ChangeOperationClick************************
+ ******************************************************************/
+function ChangeOperation(button) {
+    if (button.innerHTML == '-') {
+        button.innerHTML = '+';
+    } else {
+        button.innerHTML = '-';
+    }
+}
 /******************************************************************
  ***********************SpendItClick***************************
  ******************************************************************/
 function AddAmountClick(button) {
+
     // takes the string from the innerHTML
     var moneyStr = AmountSpent.innerHTML
 
@@ -53,29 +91,62 @@ function AddAmountClick(button) {
 
     var moneySpent = parseInt(moneyStr);
 
-    // Which Button did they press?
-    switch (button.id) {
-        case "25Button":
-            moneySpent = moneySpent + 25;
-            break;
-        case "20Button":
-            moneySpent = moneySpent + 20;
-            break;
-        case "50Button":
-            moneySpent = moneySpent + 50;
-            break;
-        case "10Button":
-            moneySpent = moneySpent + 10;
-            break;
-        case "5Button":
-            moneySpent = moneySpent + 5;
-            break;
-        case "1Button":
-            moneySpent = moneySpent + 1;
-            break;
+    if (document.querySelector("#ChangeOperation").innerHTML == '+') {
+        // Which Button did they press?
+        switch (button.id) {
+            case "25Button":
+                moneySpent = moneySpent + 25;
+                break;
+            case "20Button":
+                moneySpent = moneySpent + 20;
+                break;
+            case "50Button":
+                moneySpent = moneySpent + 50;
+                break;
+            case "10Button":
+                moneySpent = moneySpent + 10;
+                break;
+            case "5Button":
+                moneySpent = moneySpent + 5;
+                break;
+            case "1Button":
+                moneySpent = moneySpent + 1;
+                break;
+        }
+    } else {
+        switch (button.id) {
+            case "25Button":
+                moneySpent = moneySpent - 25;
+                break;
+            case "20Button":
+                moneySpent = moneySpent - 20;
+                break;
+            case "50Button":
+                moneySpent = moneySpent - 50;
+                break;
+            case "10Button":
+                moneySpent = moneySpent - 10;
+                break;
+            case "5Button":
+                moneySpent = moneySpent - 5;
+                break;
+            case "1Button":
+                moneySpent = moneySpent - 1;
+                break;
+        }
+
     }
 
-    AmountSpent.innerHTML = moneySpent + '$';
+    // determine if they are setting the budget, adding to their budget, or spending their budget
+    if (isInAdjustmentMode) {
+        document.querySelector("#SpendIt").innerHTML = "Set Budget";
+    } else if (moneySpent > 0) {
+        document.querySelector("#SpendIt").innerHTML = "Save It!";
+    } else if (moneySpent <= 0) {
+        document.querySelector("#SpendIt").innerHTML = "Spend It!";
+    }
+
+    AmountSpent.innerHTML = '$' + moneySpent;
 }
 
 /******************************************************************
@@ -85,51 +156,156 @@ function SpendItClick(button) {
     // takes the string from the innerHTML
     var moneyStr = AmountSpent.innerHTML
 
-    // remove the $
     moneyStr = moneyStr.replace('$', '');
 
+    if (isInAdjustmentMode) {
 
-    var spent = parseInt(moneyStr);
-    // which part of the user data to update
-    switch (selectedExpense) {
-        case "Food":
-            curUser.expenses.Food = curUser.expenses.Food - spent;
-            break;
-        case "Transportation":
-            curUser.expenses.Transportation = curUser.expenses.Transportation - spent;
-            break;
-        case "Fun":
-            curUser.expenses.Fun = curUser.expenses.Fun - spent;
-            break;
-        case "Medical":
-            curUser.expenses.Medical = curUser.expenses.Medical - spent;
-            break;
-        case "Clothing":
-            curUser.expenses.Clothing = curUser.expenses.Clothing - spent;
-            break;
+        // set the budget to the amount the user enters
+        curUser.monthlyAllotment[selectedExpense] = parseInt(moneyStr);
+
+        // change the html to the new budget
+        document.querySelector("#" + selectedExpense).innerHTML = selectedExpense + ": $" + curUser.monthlyAllotment[selectedExpense]
+
+        // move back to the main page
+        transitionClick("MainPage", button);
+
+    } else {
+        // remove the $
+
+        // take the money out!
+        curUser.expenses[selectedExpense] -= parseInt(moneyStr);
+
+        // set the html
+        document.querySelector("#" + selectedExpense).innerHTML = selectedExpense + ": $" + curUser.expenses[selectedExpense]
+
+        // move back to the main page
+        transitionClick("MainPage", button);
     }
 
-    //turn object to string
-    var userAsString = JSON.stringify(curUser);
+    //turn object to string and store
     localStorage.setItem('storedUser', JSON.stringify(curUser));
-
-
-    //trasition to the AmountPage
-    document.querySelector("#MainPage").style.left = "0%";
-    document.querySelector("#MainPage").style.position = "relative";
-    document.querySelector("#AmountPage").style.left = "-1000%";
-    document.querySelector("#AmountPage").style.position = "absolute";
-
-    // set the html
-    document.querySelector("#Food").innerHTML = "Food: " + curUser.expenses.Food;
-    Transportation.innerHTML = "Transportation: " + curUser.expenses.Transportation;
-    Fun.innerHTML = "Fun: " + curUser.expenses.Fun;
-    Medical.innerHTML = "Medical: " + curUser.expenses.Medical;
-    Clothing.innerHTML = "Clothing: " + curUser.expenses.Clothing;
 
 }
 
+/******************************************************************
+ **********************New Month Click*****************************
+ ******************************************************************/
+function NewMonth() {
 
+    for (var key in curUser.expenses) {
+        var test = curUser.monthlyAllotment[key];
+        curUser.expenses[key] = curUser.monthlyAllotment[key];
+        document.querySelector('#' + key).innerHTML = key + ': $' + curUser.monthlyAllotment[key];
+    }
+
+    //turn object to string and store
+    localStorage.setItem('storedUser', JSON.stringify(curUser));
+}
+
+/******************************************************************
+ **********************Add Category Click**************************
+ ******************************************************************/
+function AddCategoryClick(button) {
+
+    var name = document.querySelector("#ButtonName").value;
+    var amount = document.querySelector("#BudgetAmountEntered").value;
+
+    if (document.getElementById(name) != null) {
+        // checks to see if I have and element with users desired name
+        window.alert("Sorry this expense name cannot be used.")
+    } else if (name == null || name == '') {
+        // checks if the name is blank
+        window.alert("Please provide an expense name.")
+    } else if (isNaN(amount)) {
+        // checks to be sure they input a number
+        window.alert("Please enter a integer without any symbols for the amount.");
+    } else if (amount == null || amount == '') {
+        // checks to be sure they have an amount input
+        window.alert("Please enter the amount of money you want to allocate to this part of the budget.");
+    } else {
+        curUser.expenses[name] = amount;
+        curUser.monthlyAllotment[name] = amount;
+        addCustomExpenses();
+
+        //clear out the input fields
+        document.querySelector("#ButtonName").value = '';
+        document.querySelector("#BudgetAmountEntered").value = '';
+
+        // put user data in storage
+        localStorage.setItem('storedUser', JSON.stringify(curUser));
+    }
+
+
+}
+
+/******************************************************************
+ **********************Adjust Budget Button************************
+ ******************************************************************/
+function AdjustBudget(button) {
+
+    var moneyStr;
+    //if it is in adjust mode then put it back to normal
+    if (isInAdjustmentMode) {
+        isInAdjustmentMode = false;
+
+        for (var key in curUser.expenses) {
+            document.querySelector('#' + key).style.color = 'white';
+            document.querySelector('#' + key).innerHTML = key + ': $' + curUser.expenses[key];
+        }
+
+        document.querySelector("#SpendIt").innerHTML = 'Spend It!';
+        document.querySelector('#' + "FinishAdjustments").remove();
+
+    } else {
+        if (document.getElementById(key) == null) {
+            var adjustButton = document.createElement("div");
+            adjustButton.id = "FinishAdjustments";
+            adjustButton.onclick = function() {
+                AdjustBudget(this)
+            };
+
+            adjustButton.className = "button";
+            adjustButton.innerHTML = "Finish Budget Adjustments";
+            document.getElementById("MainPage").appendChild(adjustButton);
+        }
+
+        document.querySelector("#SpendIt").innerHTML = 'Set Budget';
+        for (var key in curUser.expenses) {
+            document.querySelector('#' + key).style.color = 'red';
+            document.querySelector('#' + key).innerHTML = key + ": $" + curUser.monthlyAllotment[key];
+        }
+
+        isInAdjustmentMode = true;
+    }
+
+    transitionClick("MainPage", button);
+
+
+}
+
+/******************************************************************
+ **********************Add Custom Expenses*************************
+ ******************************************************************/
+function addCustomExpenses() {
+
+
+    var customExpenses;
+
+    for (var key in curUser.expenses) {
+        if (document.getElementById(key) == null) {
+            customExpenses = document.createElement("div");
+            customExpenses.id = key;
+            customExpenses.onclick = function() {
+                transitionClick('AmountPage', this)
+            };
+
+            customExpenses.className = "button";
+            customExpenses.innerHTML = key + ": $" + curUser.expenses[key];
+            document.getElementById("MainPage").appendChild(customExpenses);
+        }
+    }
+
+}
 
 /******************************************************************
  ***************************USER CLASS******************************
@@ -139,23 +315,18 @@ function User() {
     // initalize the name
     this.name = '';
 
+    // keep track of the month
+    var lastLogin = new Date();
 
-    // initalize the groups array
+    this.lastLoginMonth = lastLogin.getMonth();
+
+    // initalize the expenses array
     this.expenses = {
-        'Food': 0,
-        'Transportation': 0,
-        'Fun': 0,
-        'Medical': 0,
-        'Clothing': 0,
+
     };
 
-    // setter
-    this.set = function set(user) {
-        this.expenses.Food = curUser.expenses.Food;
-        this.expenses.Transportation = user.expenses.Transportation;
-        this.expenses.Fun = user.expenses.Fun;
-        this.expenses.Medical = user.expenses.Medical;
-        this.expenses.Clothing = user.expenses.Clothing;
+    this.monthlyAllotment = {
+
     };
 
 }
