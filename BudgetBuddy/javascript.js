@@ -23,14 +23,11 @@ function loadData() {
     //add the different Expenses
     addCustomExpenses();
 
-    // Check if it is a new month
-    var tempDate = new Date();
+    // *****EVENTUALLY THE FEATURE WILL BE ADDED TO AUTO RESET BUDGET FOR NEW MONTH.  CHOICE WILL BE USERS******
+    /*var tempDate = new Date();
     if (curUser.lastLoginMonth != tempDate.getMonth()) {
-
-        // woot replenish the bank!
-        resetBudget();
     }
-
+    */
     // put user data in storage
     localStorage.setItem('storedUser', JSON.stringify(curUser));
 
@@ -287,6 +284,8 @@ function DeleteExpense(button) {
         }
 
         isInDeleteMode = true;
+
+        transitionClick("MainPage", button);
     }
 }
 
