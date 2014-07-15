@@ -289,6 +289,9 @@ function DeleteExpense(button) {
     }
 }
 
+/******************************************************************
+ **********************Remove Expense******************************
+ ******************************************************************/
 function RemoveExpense(button) {
 
     // remove all the html elements
@@ -312,6 +315,16 @@ function RemoveExpense(button) {
 
     // put user data in storage
     localStorage.setItem('storedUser', JSON.stringify(curUser));
+}
+
+/******************************************************************
+ **********************Clear Data Button************************
+ ******************************************************************/
+function ClearData() {
+    localStorage.clear();
+
+    location.reload();
+
 }
 
 /******************************************************************
