@@ -12,12 +12,31 @@ var isInDeleteMode = false;
  ******************************************************************/
 function loadData() {
 
+    var userHasExpenses = false;
+    var firstTimeUser = false;
+
+
     // if it is a new user
     if (curUser == null) {
         curUser = new User();
         curUser.name = prompt(" Welcome to Budget Buddy! Please enter your name", "Harry Potter");
         transitionClick("SettingsPage", "Open");
         window.alert("Be sure to add the different budget categories here.");
+        firstTimeUser = true;
+    }
+
+    for (var key in curUser.expenses) {
+        if (curUser.expenses[key] == null || curUser.expenses[key] == '') {
+            break
+        }
+        userHasExpenses = true;
+    }
+
+    if (!(userHasExpenses) && !(firstTimeUser)) {
+        //returning user with no expenses
+        transitionClick("SettingsPage", "Open");
+        window.alert("Welcome back " + curUser.name + " you really should start adding expenses to your budget!");
+
     }
 
     //add the different Expenses
